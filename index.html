@@ -85,73 +85,117 @@
     </footer>
   </div>
 
-  <script>
-    const API_KEY = '4348ae5aa7a4288e0166ca6706be5171';
-    const MAX_ARTICLES = 50;
-    const grid = document.getElementById('grid');
-    const statusEl = document.getElementById('status');
-    const errorEl = document.getElementById('error');
-    const fetchBtn = document.getElementById('fetchBtn');
-    const countryEl = document.getElementById('country');
-    const qEl = document.getElementById('q');
+ <script>
+const GNEWS_KEY = '4348ae5aa7a4288e0166ca6706be5171';
+const NEWSAPI_KEY = 'dc9995ffa5a14e7193692be515e9a71d';
+const MAX_ARTICLES = 20;
 
-    function formatDate(iso){ try{ return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
-    function el(tag, cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const errorEl = document.getElementById('error');
+const fetchBtn = document.getElementById('fetchBtn');
+const countryEl = document.getElementById('country');
+const qEl = document.getElementById('q');
 
-    async function loadNews(){
-      grid.innerHTML='';
-      errorEl.style.display='none';
-      statusEl.textContent='Loading news...';
-      let url=`https://gnews.io/api/v4/top-headlines?token=${API_KEY}&lang=en&max=${MAX_ARTICLES}`;
-      if(countryEl.value) url += `&country=${countryEl.value}`;
-      if(qEl.value.trim()) url += `&q=${encodeURIComponent(qEl.value.trim())}`;
-      const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+function formatDate(iso){ try{ return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
+function el(tag, cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
 
-      try{
-        const res=await fetch(proxyUrl);
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data=await res.json();
-        if(data.articles && data.articles.length){
-          statusEl.textContent=`${data.articles.length} articles`;
-          renderArticles(data.articles);
-        } else {
-          statusEl.textContent='No articles found';
-          errorEl.style.display='block';
-          errorEl.textContent='No articles returned by the API.';
-        }
-      }catch(err){
-        console.error(err);
-        statusEl.textContent='Error loading';
-        errorEl.style.display='block';
-        errorEl.textContent='Error: '+err.message;
+// List of NewsAPI fallback URLs
+const NEWSAPI_URLS = [
+  `https://newsapi.org/v2/everything?domains=wsj.com&apiKey=${NEWSAPI_KEY}`,
+  `https://newsapi.org/v2/top-headlines?sources=techcrunch&apiKey=${NEWSAPI_KEY}`,
+  `https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=${NEWSAPI_KEY}`,
+  `https://newsapi.org/v2/everything?q=tesla&from=2025-09-23&sortBy=publishedAt&apiKey=${NEWSAPI_KEY}`,
+  `https://newsapi.org/v2/everything?q=apple&from=2025-10-22&to=2025-10-22&sortBy=popularity&apiKey=${NEWSAPI_KEY}`
+];
+
+async function fetchJSON(url){
+  const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+  const res = await fetch(proxyUrl);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function loadNews(){
+  grid.innerHTML = '';
+  errorEl.style.display='none';
+  statusEl.textContent='Loading news...';
+
+  const country = countryEl.value;
+  const q = qEl.value.trim();
+
+  // GNews URL
+  let gnewsUrl = `https://gnews.io/api/v4/top-headlines?token=${GNEWS_KEY}&lang=en&max=${MAX_ARTICLES}`;
+  if(country) gnewsUrl += `&country=${country}`;
+  if(q) gnewsUrl += `&q=${encodeURIComponent(q)}`;
+
+  // Try GNews first
+  try{
+    const data = await fetchJSON(gnewsUrl);
+    if(data.articles && data.articles.length){
+      statusEl.textContent=`${data.articles.length} articles (GNews)`;
+      renderArticles(data.articles);
+      return;
+    } else throw new Error('No articles returned from GNews');
+  }catch(err){
+    console.warn('GNews failed:', err.message);
+    statusEl.textContent='GNews failed, trying NewsAPI...';
+  }
+
+  // Try NewsAPI URLs in order
+  for(const url of NEWSAPI_URLS){
+    try{
+      const data = await fetchJSON(url);
+      if(data.articles && data.articles.length){
+        statusEl.textContent=`${data.articles.length} articles (NewsAPI)`;
+        renderArticles(data.articles);
+        return;
       }
+    }catch(err){
+      console.warn('NewsAPI URL failed:', url, err.message);
     }
+  }
 
-    function renderArticles(articles){
-      grid.innerHTML='';
-      for(const a of articles){
-        const card=el('article','card');
-        const img=el('img','thumb'); img.alt=a.title||'news image'; img.src=a.image||''; img.onerror=()=>img.style.display='none';
-        card.appendChild(img);
+  // All failed
+  statusEl.textContent='Error loading news';
+  errorEl.style.display='block';
+  errorEl.textContent='All APIs failed or returned no articles.';
+}
 
-        const content=el('div','content');
-        const title=el('h3','title'); title.textContent=a.title||'No title'; content.appendChild(title);
-        const desc=el('p','desc'); desc.textContent=a.description|| (a.content ? a.content.slice(0,50)+'...' : ''); content.appendChild(desc);
+function renderArticles(articles){
+  grid.innerHTML='';
+  for(const a of articles){
+    const card = el('article','card');
+    const img = el('img','thumb'); img.alt=a.title||'news image'; img.src=a.image || a.urlToImage || ''; img.onerror=()=>img.style.display='none';
+    card.appendChild(img);
 
-        const footer=el('div','card-footer');
-        const src=el('div','source'); src.innerHTML=`<strong>${a.source?.name||'Source'}</strong> • ${formatDate(a.publishedAt)}`; footer.appendChild(src);
+    const content = el('div','content');
+    const title = el('h3','title'); title.textContent = a.title || 'No title'; content.appendChild(title);
+    const desc = el('p','desc'); desc.textContent = a.description || (a.content ? a.content.slice(0,50)+'...' : ''); content.appendChild(desc);
 
-        const readBtn=el('a','small-btn'); readBtn.href=a.url||'#'; readBtn.target='_blank'; readBtn.rel='noopener noreferrer'; readBtn.textContent='Read';
-        footer.appendChild(readBtn);
+    const footer = el('div','card-footer');
+    const src = el('div','source'); src.innerHTML = `<strong>${a.source?.name||'Source'}</strong> • ${formatDate(a.publishedAt||a.publishedAt)}`; footer.appendChild(src);
 
-        content.appendChild(footer);
-        card.appendChild(content);
-        grid.appendChild(card);
-      }
-    }
+    const readBtn = el('a','small-btn'); readBtn.href = a.url || '#'; readBtn.target='_blank'; readBtn.rel='noopener noreferrer'; readBtn.textContent='Read';
+    footer.appendChild(readBtn);
 
-    fetchBtn.addEventListener('click',()=>loadNews());
-    (function init(){ if(!API_KEY.trim()){ statusEl.textContent='Set your API key.'; errorEl.style.display='block'; errorEl.textContent='Replace YOUR_API_KEY with your token from https://gnews.io'; return; } loadNews(); })();
-  </script>
+    content.appendChild(footer);
+    card.appendChild(content);
+    grid.appendChild(card);
+  }
+}
+
+fetchBtn.addEventListener('click', ()=> loadNews());
+(function init(){
+  if(!GNEWS_KEY.trim() && !NEWSAPI_KEY.trim()){
+    statusEl.textContent='Set your API keys.';
+    errorEl.style.display='block';
+    errorEl.textContent='Replace YOUR_API_KEYs with your tokens.';
+    return;
+  }
+  loadNews();
+})();
+</script>
+
 </body>
 </html>
