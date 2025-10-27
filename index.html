@@ -2,42 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="google-adsense-account" content="ca-pub-9998374393458024">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The News Today — Responsive Demo</title>
-  <meta name="description" content="Get the latest top headlines from around the world in one place. Fast, responsive, and easy to browse." />
+  <title>The News Today — Latest Headlines</title>
+  <meta name="description" content="Stay updated with top headlines and breaking news worldwide. The News Today provides live articles from trusted sources." />
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9998374393458024"
+     crossorigin="anonymous"></script>
+
   <style>
     :root{
       --bg:#f5f7fb; --card:#ffffff; --muted:#636f83; --accent:#0b74de;
       --maxw:1100px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     }
     html,body{height:100%; margin:0; background:var(--bg); color:#0b1020;}
     body{display:flex; justify-content:center; padding:20px;}
     .wrap{width:100%; max-width:var(--maxw);}
-
-    /* Navigation */
-    nav{
-      background:var(--accent);
-      padding:10px 15px;
-      border-radius:12px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:20px;
-    }
-    nav a{
-      color:#fff;
-      text-decoration:none;
-      font-weight:600;
-      margin:0 10px;
-      transition:opacity .2s;
-    }
-    nav a:hover{opacity:0.8;}
-
-    header{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;}
+    
+    nav{display:flex; justify-content:space-between; align-items:center; background:#fff; padding:12px 16px; border-radius:12px; box-shadow:0 3px 8px rgba(0,0,0,0.05); margin-bottom:20px;}
+    nav a{text-decoration:none; color:var(--accent); font-weight:600; margin:0 8px;}
+    nav a:hover{text-decoration:underline;}
     h1{margin:0; font-size:24px;}
     .meta{color:var(--muted); font-size:14px;}
 
+    header{display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;}
     .controls{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
     select, input[type="text"]{padding:8px 10px; border-radius:8px; border:1px solid #e3e8ef; background:#fff; flex:1 1 120px;}
     button{padding:8px 12px; border-radius:8px; border:0; background:var(--accent); color:#fff; cursor:pointer;}
@@ -46,7 +36,7 @@
     .error{color:#a42828; background:#fff0f0; padding:10px; border-radius:8px; margin-bottom:12px;}
 
     .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
-    .card{background:var(--card); border-radius:12px; overflow:hidden; box-shadow:0 6px 18px rgba(15,30,60,0.06); display:flex; flex-direction:column; min-height:250px; transition:transform 0.2s;}
+    .card{background:var(--card); border-radius:12px; overflow:hidden; box-shadow:0 6px 18px rgba(15,30,60,0.06); display:flex; flex-direction:column; min-height:250px; transition: transform 0.2s;}
     .card:hover{transform:translateY(-5px);}
     .thumb{width:100%; height:160px; object-fit:cover; background:#ddd;}
     .content{padding:12px 14px; display:flex; flex-direction:column; gap:8px; flex:1;}
@@ -62,15 +52,18 @@
       h1{font-size:20px;}
       .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
       .thumb{height:140px;}
-      nav{flex-direction:column;}
+    }
+    @media (max-width:400px){
+      header{flex-direction:column; align-items:flex-start;}
+      .controls{flex-direction:column; width:100%;}
+      nav{flex-direction:column; align-items:flex-start;}
     }
   </style>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9998374393458024" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="wrap">
     <nav>
-      <div><a href="#">The News Today</a></div>
+      <div><a href="index.html">📰 The News Today</a></div>
       <div>
         <a href="index.html">Home</a>
         <a href="#about">About</a>
@@ -80,8 +73,8 @@
 
     <header>
       <div>
-        <h1>The News Today</h1>
-        <div class="meta">Top headlines (English)</div>
+        <h1>Top Headlines</h1>
+        <div class="meta">Live English News Updates</div>
       </div>
 
       <div class="controls">
@@ -99,19 +92,20 @@
 
     <div id="status" class="loader" aria-live="polite">Ready</div>
     <div id="error" class="error" style="display:none"></div>
-
     <main>
       <div id="grid" class="grid"></div>
     </main>
 
     <footer>
-      &copy; 2025 The News Today — Created by Vanny
+      &copy; 2025 The News Today — Built by Vanny
     </footer>
   </div>
 
   <script defer>
-    const API_KEY = '4348ae5aa7a4288e0166ca6706be5171';
-    const MAX_ARTICLES = 50;
+    const GNEWS_KEY = '4348ae5aa7a4288e0166ca6706be5171';
+    const NEWSAPI_KEY = 'dc9995ffa5a14e7193692be515e9a71d';
+    const MAX_ARTICLES = 20;
+
     const grid = document.getElementById('grid');
     const statusEl = document.getElementById('status');
     const errorEl = document.getElementById('error');
@@ -122,54 +116,85 @@
     function formatDate(iso){ try{ return new Date(iso).toLocaleString(); } catch(e){ return iso; } }
     function el(tag, cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
 
+    const today = new Date().toISOString().split('T')[0];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const NEWSAPI_URLS = [
+      `https://newsapi.org/v2/everything?domains=wsj.com&apiKey=${NEWSAPI_KEY}`,
+      `https://newsapi.org/v2/top-headlines?sources=techcrunch&apiKey=${NEWSAPI_KEY}`,
+      `https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=${NEWSAPI_KEY}`,
+      `https://newsapi.org/v2/everything?q=tesla&from=${weekAgo}&to=${today}&sortBy=publishedAt&apiKey=${NEWSAPI_KEY}`,
+      `https://newsapi.org/v2/everything?q=apple&from=${weekAgo}&to=${today}&sortBy=popularity&apiKey=${NEWSAPI_KEY}`
+    ];
+
+    async function fetchJSON(url){
+      const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+      const res = await fetch(proxyUrl);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
     async function loadNews(){
-      grid.innerHTML='';
+      grid.innerHTML = '';
       errorEl.style.display='none';
       statusEl.textContent='Loading news...';
-      let url=`https://gnews.io/api/v4/top-headlines?token=${API_KEY}&lang=en&max=${MAX_ARTICLES}`;
-      if(countryEl.value) url += `&country=${countryEl.value}`;
-      if(qEl.value.trim()) url += `&q=${encodeURIComponent(qEl.value.trim())}`;
-      const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+
+      const country = countryEl.value;
+      const q = qEl.value.trim();
+
+      let gnewsUrl = `https://gnews.io/api/v4/top-headlines?token=${GNEWS_KEY}&lang=en&max=${MAX_ARTICLES}`;
+      if(country) gnewsUrl += `&country=${country}`;
+      if(q) gnewsUrl += `&q=${encodeURIComponent(q)}`;
 
       try{
-        const res=await fetch(proxyUrl);
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data=await res.json();
+        const data = await fetchJSON(gnewsUrl);
         if(data.articles && data.articles.length){
-          statusEl.textContent=`${data.articles.length} articles`;
+          statusEl.textContent=`${data.articles.length} articles (GNews)`;
           renderArticles(data.articles);
-        } else {
-          statusEl.textContent='No articles found';
-          errorEl.style.display='block';
-          errorEl.textContent='No articles returned by the API.';
-        }
+          return;
+        } else throw new Error('No articles from GNews');
       }catch(err){
-        console.error(err);
-        statusEl.textContent='Error loading';
-        errorEl.style.display='block';
-        errorEl.textContent='Error: '+err.message;
+        console.warn('GNews failed:', err.message);
+        statusEl.textContent='GNews failed, trying NewsAPI...';
       }
+
+      for(const url of NEWSAPI_URLS){
+        try{
+          const data = await fetchJSON(url);
+          if(data.articles && data.articles.length){
+            statusEl.textContent=`${data.articles.length} articles (NewsAPI)`;
+            renderArticles(data.articles);
+            return;
+          }
+        }catch(err){
+          console.warn('NewsAPI URL failed:', err.message);
+        }
+      }
+
+      statusEl.textContent='Error loading news';
+      errorEl.style.display='block';
+      errorEl.textContent='All APIs failed or returned no articles.';
     }
 
     function renderArticles(articles){
       grid.innerHTML='';
       for(const a of articles){
-        const card=el('article','card');
-        const img=el('img','thumb'); 
+        const card = el('article','card');
+        const img = el('img','thumb'); 
         img.alt=a.title||'news image'; 
-        img.src=a.image||''; 
-        img.loading='lazy';
+        img.loading='lazy'; // 🚀 Lazy load for speed
+        img.src=a.image || a.urlToImage || ''; 
         img.onerror=()=>img.style.display='none';
         card.appendChild(img);
 
-        const content=el('div','content');
-        const title=el('h3','title'); title.textContent=a.title||'No title'; content.appendChild(title);
-        const desc=el('p','desc'); desc.textContent=a.description|| (a.content ? a.content.slice(0,50)+'...' : ''); content.appendChild(desc);
+        const content = el('div','content');
+        const title = el('h3','title'); title.textContent = a.title || 'No title'; content.appendChild(title);
+        const desc = el('p','desc'); desc.textContent = a.description || (a.content ? a.content.slice(0,50)+'...' : ''); content.appendChild(desc);
 
-        const footer=el('div','card-footer');
-        const src=el('div','source'); src.innerHTML=`<strong>${a.source?.name||'Source'}</strong> • ${formatDate(a.publishedAt)}`; footer.appendChild(src);
+        const footer = el('div','card-footer');
+        const src = el('div','source'); src.innerHTML = `<strong>${a.source?.name||'Source'}</strong> • ${formatDate(a.publishedAt||a.publishedAt)}`; footer.appendChild(src);
 
-        const readBtn=el('a','small-btn'); readBtn.href=a.url||'#'; readBtn.target='_blank'; readBtn.rel='noopener noreferrer'; readBtn.textContent='Read';
+        const readBtn = el('a','small-btn'); readBtn.href = a.url || '#'; readBtn.target='_blank'; readBtn.rel='noopener noreferrer'; readBtn.textContent='Read';
         footer.appendChild(readBtn);
 
         content.appendChild(footer);
@@ -178,8 +203,16 @@
       }
     }
 
-    fetchBtn.addEventListener('click',()=>loadNews());
-    (function init(){ loadNews(); })();
+    fetchBtn.addEventListener('click', ()=> loadNews());
+    (function init(){
+      if(!GNEWS_KEY.trim() && !NEWSAPI_KEY.trim()){
+        statusEl.textContent='Set your API keys.';
+        errorEl.style.display='block';
+        errorEl.textContent='Replace YOUR_API_KEYs with your tokens.';
+        return;
+      }
+      loadNews();
+    })();
   </script>
 </body>
 </html>
